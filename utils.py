@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 TAG_FLOAT = 202021.25
 # testing vim, and git push
 
+
 def readflo(file):
     assert type(file) is str, "file is not str %r" % str(file)
     assert os.path.isfile(file) is True, "file does not exist %r" % str(file)
@@ -201,7 +202,7 @@ def EPE(flow_pred, flow_true, real=False):
     return torch.norm(flow_pred - flow_true, 2, 1).mean()
 
 
-def EPE_all(flows_pred, flow_true, weights=None):
+def EPE_all(flows_pred, flow_true, weights=(0.005, 0.005, 0.01, 0.02, 0.08, 0.32)):
 
     if weights is None:
         weights = [1 / len(flows_pred)] * len(flows_pred)

@@ -8,7 +8,7 @@ import albumentations as albu
 from albumentations.pytorch import ToTensor
 
 
-class SintelDataset(Dataset):
+class OpticalFlowDataset(Dataset):
     def __init__(self, root, frames_transforms=None, frames_aug_transforms=None,co_aug_transforms=None):
         self.root = root
         self.frames_transforms = frames_transforms
@@ -16,9 +16,46 @@ class SintelDataset(Dataset):
         self.co_aug_transforms = co_aug_transforms
         self.target3 = {'image0': 'image', 'image1': 'image', 'image2': 'image'}
         self.target2 = {'image0': 'image', 'image1': 'image'}
-        scenes = sorted(os.listdir(os.path.join(self.root, "final")))
         self.imgPairs = []
         self.flows = []
+
+    def __getitem__(self, idx):
+
+        flow = readflo(self.flows[idx])
+        frame1 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][0]), cv2.COLOR_BGR2RGB)
+        frame2 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][1]), cv2.COLOR_BGR2RGB)
+
+        if self.co_aug_transforms is not None:
+            transformed = albu.Compose(self.co_aug_transforms, p=1, additional_targets=self.target3)(image=frame1,
+                                                                                                     image0=frame2,
+                                                                                                     image1=flow)
+            frame1 = transformed['image']
+            frame2 = transformed['image0']
+            flow = transformed['image1']
+
+        if self.frames_aug_transforms is not None:
+            transformed = albu.Compose(self.frames_aug_transforms, p=1, additional_targets=self.target2)(image=frame1,
+                                                                                                         image0=frame2)
+            frame1 = transformed['image']
+            frame2 = transformed['image0']
+
+        if self.frames_transforms is not None:
+
+            frame1 = self.frames_transforms(image=frame1)['image']
+            frame2 = self.frames_transforms(image=frame2)['image']
+
+        flow = torch.from_numpy(flow.transpose(2, 0, 1))
+        frames = torch.cat((frame1, frame2), dim=0)
+        return frames, flow
+
+    def __len__(self):
+        return len(self.imgPairs)
+
+
+class SintelDataset(OpticalFlowDataset):
+    def __init__(self, root, frames_transforms=None, frames_aug_transforms=None, co_aug_transforms=None):
+        super().__init__(root, frames_transforms, frames_aug_transforms, co_aug_transforms)
+        scenes = sorted(os.listdir(os.path.join(self.root, "final")))
         genres = ['albedo', 'clean', 'final']
         for scene in scenes:
             frame_names = [path.split('.')[0] for path in sorted(os.listdir(os.path.join(self.root, "final", scene)))]
@@ -31,49 +68,10 @@ class SintelDataset(Dataset):
 
         assert (len(self.imgPairs) == len(self.flows))
 
-    def __getitem__(self, idx):
 
-        flow = readflo(self.flows[idx])
-        frame1 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][0]), cv2.COLOR_BGR2RGB)
-        frame2 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][1]), cv2.COLOR_BGR2RGB)
-
-        if self.co_aug_transforms is not None:
-            transformed = albu.Compose(self.co_aug_transforms, p=1, additional_targets=self.target3)(image=frame1,
-                                                                                                     image0=frame2,
-                                                                                                     image1=flow)
-            frame1 = transformed['image']
-            frame2 = transformed['image0']
-            flow = transformed['image1']
-
-        if self.frames_aug_transforms is not None:
-            transformed = albu.Compose(self.frames_aug_transforms, p=1, additional_targets=self.target2)(image=frame1,
-                                                                                                         image0=frame2)
-            frame1 = transformed['image']
-            frame2 = transformed['image0']
-
-        if self.frames_transforms is not None:
-
-            frame1 = self.frames_transforms(image=frame1)['image']
-            frame2 = self.frames_transforms(image=frame2)['image']
-
-        flow = torch.from_numpy(flow.transpose(2, 0, 1))
-        frames = torch.cat((frame1, frame2), dim=0)
-        return frames, flow
-
-    def __len__(self):
-        return len(self.flows)
-
-
-class FlyingChairs(Dataset):
+class FlyingChairs(OpticalFlowDataset):
     def __init__(self, root, frames_transforms=None, frames_aug_transforms=None, co_aug_transforms=None):
-        self.root = root
-        self.frames_transforms = frames_transforms
-        self.frames_aug_transforms = frames_aug_transforms
-        self.co_aug_transforms = co_aug_transforms
-        self.imgPairs = []
-        self.flows = []
-        self.target3 = {'image0': 'image', 'image1': 'image', 'image2': 'image'}
-        self.target2 = {'image0': 'image', 'image1': 'image'}
+        super().__init__(root, frames_transforms, frames_aug_transforms, co_aug_transforms)
         for file_name in sorted(os.listdir(self.root)):
             if "flow" in file_name:
                 self.flows.append(os.path.join(self.root, file_name))
@@ -84,47 +82,10 @@ class FlyingChairs(Dataset):
 
         assert (len(self.imgPairs) == len(self.flows))
 
-    def __getitem__(self, idx):
 
-        flow = readflo(self.flows[idx])
-        frame1 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][0]), cv2.COLOR_BGR2RGB)
-        frame2 = cv2.cvtColor(cv2.imread(self.imgPairs[idx][1]), cv2.COLOR_BGR2RGB)
-
-        if self.co_aug_transforms is not None:
-            transformed = albu.Compose(self.co_aug_transforms, p=1, additional_targets=self.target3)(image=frame1,
-                                                                                                     image0=frame2,
-                                                                                                     image1=flow)
-            frame1 = transformed['image']
-            frame2 = transformed['image0']
-            flow = transformed['image1']
-
-        if self.frames_aug_transforms is not None:
-            transformed = albu.Compose(self.frames_aug_transforms, p=1, additional_targets=self.target2)(image=frame1,
-                                                                                                         image0=frame2)
-            frame1 = transformed['image']
-            frame2 = transformed['image0']
-
-        if self.frames_transforms is not None:
-
-            frame1 = self.frames_transforms(image=frame1)['image']
-            frame2 = self.frames_transforms(image=frame2)['image']
-
-        flow = torch.from_numpy(flow.transpose(2, 0, 1))
-        frames = torch.cat((frame1, frame2), dim=0)
-        return frames, flow
-
-    def __len__(self):
-        return len(self.flows)
-
-
-class OceanData(Dataset):
-    def __init__(self, root,  frames_transforms=None, frames_aug_transforms=None, co_aug_transforms=None):
-        self.root = root
-        self.frames_transforms = frames_transforms
-        self.frames_aug_transforms = frames_aug_transforms
-        self.co_aug_transforms = co_aug_transforms
-        self.target2 = {'image0': 'image', 'image1': 'image'}
-        self.imgPairs = []
+class OceanData(OpticalFlowDataset):
+    def __init__(self, root, frames_transforms=None, frames_aug_transforms=None, co_aug_transforms=None):
+        super().__init__(root, frames_transforms, frames_aug_transforms, co_aug_transforms)
         file_names = sorted(os.listdir(self.root))
 
         for i in range(0, len(file_names) - 1):
@@ -155,9 +116,6 @@ class OceanData(Dataset):
         frames = torch.cat((frame1, frame2), dim=0)
         return frames,
 
-    def __len__(self):
-        return len(self.imgPairs)
-
 
 def getDataloaders(batch_size, root='../sintel/training', frames_transforms=None, frames_aug_transforms=None,
                    co_aug_transforms=None):
@@ -181,9 +139,9 @@ def getDataloaders(batch_size, root='../sintel/training', frames_transforms=None
     indices = torch.randperm(len(train_dataset)).tolist()
     train_idx, valid_idx, test_idx = indices[val_size + test_size:], indices[:val_size], indices[
                                                                                          val_size:test_size + val_size]
-    train_sampler = SubsetRandomSampler(train_idx[:10])
-    val_sampler = SubsetRandomSampler(valid_idx[:10])
-    test_sampler = SubsetRandomSampler(test_idx[:10])
+    train_sampler = SubsetRandomSampler(train_idx)
+    val_sampler = SubsetRandomSampler(valid_idx)
+    test_sampler = SubsetRandomSampler(test_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler,
                               pin_memory=torch.cuda.is_available(), num_workers=4)

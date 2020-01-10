@@ -139,9 +139,9 @@ def getDataloaders(batch_size, root='../sintel/training', frames_transforms=None
     indices = torch.randperm(len(train_dataset)).tolist()
     train_idx, valid_idx, test_idx = indices[val_size + test_size:], indices[:val_size], indices[
                                                                                          val_size:test_size + val_size]
-    train_sampler = SubsetRandomSampler(train_idx[:100])
-    val_sampler = SubsetRandomSampler(valid_idx[:100])
-    test_sampler = SubsetRandomSampler(test_idx[:100])
+    train_sampler = SubsetRandomSampler(train_idx)
+    val_sampler = SubsetRandomSampler(valid_idx)
+    test_sampler = SubsetRandomSampler(test_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler,
                               pin_memory=torch.cuda.is_available(), num_workers=4)

@@ -202,10 +202,10 @@ def EPE(flow_pred, flow_true, real=False):
     return torch.norm(flow_pred - flow_true, 2, 1).mean()
 
 
-def EPE_all(flows_pred, flow_true, weights=(0.005, 0.005, 0.01, 0.02, 0.08, 0.32)):
+def EPE_all(flows_pred, flow_true, weights=(0.005, 0.01, 0.02, 0.08, 0.32)):
 
-    if weights is None:
-        weights = [1 / len(flows_pred)] * len(flows_pred)
+    if len(flows_pred) < 5:
+        weights = [0.005] * len(flows_pred)
     loss = 0
 
     for i in range(len(weights)):

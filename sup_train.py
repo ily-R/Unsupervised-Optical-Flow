@@ -7,7 +7,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 np.random.seed(seed=1)
 
-PRINT_INTERVAL = 5
+PRINT_INTERVAL = 50
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
@@ -57,7 +57,7 @@ def epoch(model, data, criterion, optimizer=None):
             loss.backward()
             optimizer.step()
 
-        ep_error, aa_error = evaluate(outputs[0].data, flow)
+        ep_error, aa_error = evaluate(outputs[0].data, flow.data)
         avg_EPE.update(ep_error.item())
         avg_AAE.update(aa_error.item())
         batch_time = time.time() - tic
@@ -150,9 +150,9 @@ if __name__ == '__main__':
     tb_frames_train, tb_flow_train = next(iter(train))
     tb_frames_val, tb_flow_val = next(iter(val))
     tb_frames_test, tb_flow_test = next(iter(test))
-    tb_frames_train, tb_flow_train = tb_frames_train[0:1], tb_flow_train[0]
-    tb_frames_val, tb_flow_val = tb_frames_val[0:1], tb_flow_val[0]
-    tb_frames_test, tb_flow_test = tb_frames_test[0:1], tb_flow_test[0]
+    tb_frames_train, tb_flow_train = tb_frames_train[0:1].to(device), tb_flow_train[0]
+    tb_frames_val, tb_flow_val = tb_frames_val[0:1].to(device), tb_flow_val[0]
+    tb_frames_test, tb_flow_test = tb_frames_test[0:1].to(device), tb_flow_test[0]
 
     os.makedirs(os.path.join("Checkpoints", path), exist_ok=True)
     os.makedirs(os.path.join("model_weight", path), exist_ok=True)
@@ -197,13 +197,13 @@ if __name__ == '__main__':
             mymodel.eval()
 
             pred_flow = mymodel(tb_frames_train)[0]
-            tb.add_images('train', disp_function(pred_flow, tb_flow_train), e, dataformats='NHWC')
+            tb.add_images('train', disp_function(pred_flow.data, tb_flow_train.data), e, dataformats='NHWC')
 
             pred_flow = mymodel(tb_frames_val)[0]
-            tb.add_images('val', disp_function(pred_flow, tb_flow_val), e, dataformats='NHWC')
+            tb.add_images('val', disp_function(pred_flow.data, tb_flow_val.data), e, dataformats='NHWC')
 
             pred_flow = mymodel(tb_frames_test)[0]
-            tb.add_images('test', disp_function(pred_flow, tb_flow_test), e, dataformats='NHWC')
+            tb.add_images('test', disp_function(pred_flow.data, tb_flow_test.data), e, dataformats='NHWC')
 
         tb.add_scalars('loss', {"train": loss, "val": loss_val, "test": loss_test}, e)
         tb.add_scalars('EPE', {"train": avg_epe, "val": avg_epe_val, "test": avg_epe_test}, e)

@@ -170,7 +170,7 @@ if __name__ == '__main__':
     mile_stone1 = 400000 // train_length
     mile_stone2 = 200000 // train_length
     if optim.param_groups[0]["lr"] == 1e-4:
-        optim.param_groups[0]["lr"] == 5e-5
+        optim.param_groups[0]["lr"] = 5e-5
     for e in range(starting_epoch, epochs):
         
         print("=================\n=== EPOCH " + str(e + 1) + " =====\n=================\n")

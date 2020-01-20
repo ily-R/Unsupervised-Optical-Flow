@@ -86,11 +86,11 @@ def epoch(model, data, criterion, optimizer=None):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default= '../sintel/training', type=str, metavar='DIR', help='path to dataset')
+    parser.add_argument('--root', default= '../FlyingChairs_release/data', type=str, metavar='DIR', help='path to dataset')
     parser.add_argument('--model', default='flownet', type=str, help='the supervised model to be trained with ('
                                                                      'flownet, lightflownet, pwc_net)')
-    parser.add_argument('--epochs', default=15, type=int, metavar='N', help='number of total epochs to run')
-    parser.add_argument('--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 128)')
+    parser.add_argument('--steps', default=600000, type=int, metavar='N', help='number of total steps to run')
+    parser.add_argument('--batch-size', default=8, type=int, metavar='N', help='mini-batch size (default: 8)')
     parser.add_argument('--lr', default=1.5e-5, type=float, metavar='LR', help='learning rate')
     parser.add_argument("--augment", help="perform data augmentation", action="store_true")
     parser.add_argument("--transfer", help="perform transfer learning from an already trained supervised model",

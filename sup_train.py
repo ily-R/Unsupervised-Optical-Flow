@@ -88,13 +88,13 @@ def epoch(model, data, criterion, optimizer=None):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default='../FlyingChairs_release/data', type=str, metavar='DIR', help='path to '
+    parser.add_argument('--root', default='../ChairsSDHom/data', type=str, metavar='DIR', help='path to '
                                                                                                         'dataset')
     parser.add_argument('--model', default='flownet', type=str, help='the model to be trained (flownet, '
                                                                      'lightflownet, pwc_net)')
-    parser.add_argument('--steps', default=1200000, type=int, metavar='N', help='number of total steps to run')
+    parser.add_argument('--steps', default=1700000, type=int, metavar='N', help='number of total steps to run')
     parser.add_argument('--batch-size', default=8, type=int, metavar='N', help='mini-batch size (default: 8)')
-    parser.add_argument('--lr', default=1e-4, type=float, metavar='LR', help='learning rate')
+    parser.add_argument('--lr', default=1e-5, type=float, metavar='LR', help='learning rate')
     parser.add_argument("--augment", help="perform data augmentation", action="store_true")
 
     args = parser.parse_args()
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     ])
 
     if args.augment:
-        if "FlyingChairs" in args.root:
+        if "Chairs" in args.root:
             crop = albu.RandomSizedCrop((150, 384), 384, 512, w2h_ratio=512/384, p=0.5)
         elif "sintel" in args.root:
             crop = albu.RandomSizedCrop((200, 436), 436, 1024, w2h_ratio=1024/436, p=0.5)
@@ -167,10 +167,8 @@ if __name__ == '__main__':
         starting_epoch = checkpoint['epoch']
         best_loss = checkpoint['best_loss']
 
-    mile_stone1 = 400000 // train_length
-    mile_stone2 = 200000 // train_length
-    if optim.param_groups[0]["lr"] == 1e-4:
-        optim.param_groups[0]["lr"] = 5e-5
+    mile_stone1 = 1400000 // train_length
+    mile_stone2 = 100000 // train_length
     for e in range(starting_epoch, epochs):
         
         print("=================\n=== EPOCH " + str(e + 1) + " =====\n=================\n")
@@ -211,7 +209,10 @@ if __name__ == '__main__':
         tb.add_scalars('EPE', {"train": avg_epe, "val": avg_epe_val, "test": avg_epe_test}, e)
         tb.add_scalars('AAE', {"train": avg_aae, "val": avg_aae_val, "test": avg_aae_test}, e)
 
-        if "Flying" in args.root and e >= mile_stone1 and e % mile_stone2 == 0:
-            optim.param_groups[0]['lr'] *= 0.5
+        if "Chairs" in args.root:
+            if e >= mile_stone1 and optim.param_groups[0]['lr'] == 1e-5:
+                optim.param_groups[0]['lr'] *= 0.5
+            elif e % mile_stone2 == 0 and optim.param_groups[0]['lr'] != 1e-5:
+                optim.param_groups[0]['lr'] *= 0.5
 
     tb.close()

@@ -130,8 +130,8 @@ class Unsupervised(nn.Module):
         grid = flow + grid
         xmax, xmin = torch.max(grid[:, :, :, 0]), torch.min(grid[:, :, :, 0])
         ymax, ymin = torch.max(grid[:, :, :, 1]), torch.min(grid[:, :, :, 1])
-        factor = torch.FloatTensor([[[[2 / (xmax - xmin), 2 / (ymax - ymin)]]]])
-        shift = torch.FloatTensor([[[[xmin, ymin]]]])
+        factor = torch.FloatTensor([[[[2 / (xmax - xmin), 2 / (ymax - ymin)]]]]).to(frame.device)
+        shift = torch.FloatTensor([[[[xmin, ymin]]]]).to(frame.device)
         grid = (grid - shift) * factor - 1
         warped_frame = F.grid_sample(frame, grid)
         return warped_frame
@@ -146,6 +146,7 @@ class Unsupervised(nn.Module):
         grid = torch.cat((xx, yy), 1).float()
         grid = torch.transpose(grid, 1, 2)
         grid = torch.transpose(grid, 2, 3)
+        grid.to(x.device)
         flow_predictions = self.predictor(x)
         frame2 = x[:, 3:, :, :]
         warped_images = [self.stn(flow, frame2, grid) for flow in flow_predictions]

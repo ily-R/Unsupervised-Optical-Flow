@@ -99,6 +99,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     mymodel = Unsupervised(conv_predictor=args.model)
+    mymodel.to(device)
     path = os.path.join("Unsupervised", type(mymodel.predictor).__name__)
     loss_fnc = unsup_loss
     if args.transfer:

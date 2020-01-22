@@ -286,14 +286,14 @@ def photometric_loss(wraped, frame1):
     return torch.sum(charbonnier(wraped - frame1), dim=1).mean()
 
 
-def unsup_loss(pred_flows, wraped_imgs, frame1, weights=None):
-    if weights is None:
-        weights = [1 / len(pred_flows)] * len(pred_flows)
+def unsup_loss(pred_flows, wraped_imgs, frame1, weights=(0.005, 0.01, 0.02, 0.08, 0.32)):
+    if len(pred_flows) < 5:
+        weights = [0.005]*len(pred_flows)
     bce = 0
     smooth = 0
     for i in range(len(weights)):
         bce += weights[i] * photometric_loss(wraped_imgs[i], frame1)
         smooth += weights[i] * smoothness_loss(pred_flows[i])
 
-    loss = bce + 0.53 * smooth
+    loss = bce + smooth
     return loss, bce, smooth

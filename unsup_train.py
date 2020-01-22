@@ -8,7 +8,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 np.random.seed(seed=1)
 
-PRINT_INTERVAL = 5
+PRINT_INTERVAL = 50
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', default='flownet', type=str, help='the supervised model to be trained with ('
                                                                      'flownet, lightflownet, pwc_net)')
     parser.add_argument('--steps', default=600000, type=int, metavar='N', help='number of total steps to run')
-    parser.add_argument('--batch-size', default=8, type=int, metavar='N', help='mini-batch size (default: 8)')
-    parser.add_argument('--lr', default=1.5e-5, type=float, metavar='LR', help='learning rate')
+    parser.add_argument('--batch-size', default=4, type=int, metavar='N', help='mini-batch size (default: 8)')
+    parser.add_argument('--lr', default=1.6e-5, type=float, metavar='LR', help='learning rate')
     parser.add_argument("--augment", help="perform data augmentation", action="store_true")
     parser.add_argument("--transfer", help="perform transfer learning from an already trained supervised model",
                         action="store_true")
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     ])
 
     if args.augment:
-        if "FlyingChairs" in args.root:
+        if "Chairs" in args.root:
             crop = albu.RandomSizedCrop((150, 384), 384, 512, w2h_ratio=512/384, p=0.5)
         elif "sintel" in args.root:
             crop = albu.RandomSizedCrop((200, 436), 436, 1024, w2h_ratio=1024/436, p=0.5)
@@ -140,15 +140,16 @@ if __name__ == '__main__':
 
     train, val, test = getDataloaders(args.batch_size, args.root, frames_transforms, frames_aug_transforms,
                                       co_aug_transforms)
-
-    os.makedirs(os.path.join("Checkpoints", path), exist_ok=True)
-    os.makedirs(os.path.join("model_weight", path), exist_ok=True)
-    tb = SummaryWriter(os.path.join("runs", path), flush_secs=20)
+    train_length = len(train)
+    epochs = args.steps // train_length
 
     tb_frames_train = next(iter(train))[0][0:1]
     tb_frames_val = next(iter(val))[0][0:1]
     tb_frames_test = next(iter(test))[0][0:1]
 
+    os.makedirs(os.path.join("Checkpoints", path), exist_ok=True)
+    os.makedirs(os.path.join("model_weight", path), exist_ok=True)
+    tb = SummaryWriter(os.path.join("runs", path), flush_secs=20)
     starting_epoch = 0
     best_loss = 100000
     if os.path.exists(os.path.join("Checkpoints", path, 'training_state.pt')):
@@ -158,10 +159,11 @@ if __name__ == '__main__':
         starting_epoch = checkpoint['epoch']
         best_loss = checkpoint['best_loss']
 
-    for e in range(starting_epoch, args.epochs):
+    mile_stone = 100000 // train_length
+    for e in range(starting_epoch, epochs):
 
         print("=================\n=== EPOCH " + str(e + 1) + " =====\n=================\n")
-
+        print("learning rate : ", optim.param_groups[0]["lr"])
         smooth_loss, bce_loss, total_loss = epoch(mymodel, train, loss_fnc, optim)
 
         torch.save({
@@ -198,6 +200,6 @@ if __name__ == '__main__':
         tb.add_scalars('bce_loss', {"train": bce_loss, "val": bce_loss_val, "test": bce_loss_test}, e)
 
         if "Flying" in args.root:
-            if e % 100000 == 0:
+            if e % mile_stone == 0:
                 optim.param_groups[0]['lr'] *= 0.5
     tb.close()

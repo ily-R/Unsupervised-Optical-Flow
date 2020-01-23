@@ -276,8 +276,8 @@ def charbonnier(x, alpha=0.25, epsilon=1.e-3):
 
 def smoothness_loss(flow):
     b, c, h, w = flow.size()
-    v_translated = torch.cat((flow[:, :, 1:, :], torch.zeros(b, c, 1, w)), dim=-2)
-    h_translated = torch.cat((flow[:, :, :, 1:], torch.zeros(b, c, h, 1)), dim=-1)
+    v_translated = torch.cat((flow[:, :, 1:, :], torch.zeros(b, c, 1, w, device=flow.device)), dim=-2)
+    h_translated = torch.cat((flow[:, :, :, 1:], torch.zeros(b, c, h, 1, device=flow.device)), dim=-1)
     s_loss = charbonnier(flow - v_translated) + charbonnier(flow - v_translated)
     return torch.sum(s_loss, dim=1).mean()
 

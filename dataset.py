@@ -145,11 +145,13 @@ def getDataloaders(batch_size, root='../sintel/training', frames_transforms=None
         val_dataset = OceanData(root, frames_transforms)
         val_size = 100
     elif "Flying" in root:
+        print("Using Flying Chairs dataset")
         train_dataset = FlyingChairs(root, frames_transforms, frames_aug_transforms, co_aug_transforms)
         val_dataset = FlyingChairs(root, frames_transforms)
         val_size = 640
         test_size = 200
     else:
+        print("Using Chairs3D dataset")
         train_dataset = Chairs3D(os.path.join(root, "train"), frames_transforms, frames_aug_transforms, co_aug_transforms)
         val_dataset = Chairs3D(os.path.join(root, "train"), frames_transforms)
         test_dataset = Chairs3D(os.path.join(root, "test"), frames_transforms)

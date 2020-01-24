@@ -68,15 +68,15 @@ def epoch(model, data, criterion, optimizer=None):
             print('[{0:s} Batch {1:03d}/{2:03d}]\t'
                   'Time {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'smooth_loss {smooth.val:5.1f} ({smooth.avg:5.1f})\t'
-                  'bce_loss {bce.val:5.1f} ({bce.avg:5.1f})'.format(
+                  'smooth_loss {smooth.val:5.4f} ({smooth.avg:5.4f})\t'
+                  'bce_loss {bce.val:5.4f} ({bce.avg:5.4f})'.format(
                    "EVAL" if optimizer is None else "TRAIN", i, len(data), batch_time=avg_batch_time, loss=avg_loss,
                    smooth=avg_smooth_loss, bce=avg_bce_loss))
 
     print('\n===============> Total time {batch_time:d}s\t'
           'Avg loss {loss.avg:.4f}\t'
-          'Avg smooth_loss {smooth.avg:5.2f} \t'
-          'Avg bce_loss {bce.avg:5.2f} \n'.format(
+          'Avg smooth_loss {smooth.avg:5.4f} \t'
+          'Avg bce_loss {bce.avg:5.4f} \n'.format(
            batch_time=int(avg_batch_time.sum), loss=avg_loss,
            smooth=avg_smooth_loss, bce=avg_bce_loss))
 
@@ -144,9 +144,9 @@ if __name__ == '__main__':
     train_length = len(train)
     epochs = args.steps // train_length
 
-    tb_frames_train = next(iter(train))[0][0:1]
-    tb_frames_val = next(iter(val))[0][0:1]
-    tb_frames_test = next(iter(test))[0][0:1]
+    tb_frames_train = next(iter(train))[0][0:1].to(device)
+    tb_frames_val = next(iter(val))[0][0:1].to(device)
+    tb_frames_test = next(iter(test))[0][0:1].to(device)
 
     os.makedirs(os.path.join("Checkpoints", path), exist_ok=True)
     os.makedirs(os.path.join("model_weight", path), exist_ok=True)
@@ -188,19 +188,19 @@ if __name__ == '__main__':
         with torch.no_grad():
             mymodel.eval()
             pred_flow = mymodel.predictor(tb_frames_train)[0]
-            tb.add_image('train', disp_function(pred_flow, tb_frames_train[0]), e, dataformats='HWC')
+            tb.add_images('train', disp_function(pred_flow, tb_frames_train[0]), e, dataformats='NHWC')
 
             pred_flow = mymodel.predictor(tb_frames_val)[0]
-            tb.add_image('val', disp_function(pred_flow, tb_frames_val[0]), e, dataformats='HWC')
+            tb.add_images('val', disp_function(pred_flow, tb_frames_val[0]), e, dataformats='NHWC')
 
             pred_flow = mymodel.predictor(tb_frames_test)[0]
-            tb.add_image('test', disp_function(pred_flow, tb_frames_test[0]), e, dataformats='HWC')
+            tb.add_images('test', disp_function(pred_flow, tb_frames_test[0]), e, dataformats='NHWC')
 
         tb.add_scalars('loss', {"train": total_loss, "val": total_loss_val, "test": total_loss_test}, e)
         tb.add_scalars('smooth_loss', {"train": smooth_loss, "val": smooth_loss_val, "test": smooth_loss_test}, e)
         tb.add_scalars('bce_loss', {"train": bce_loss, "val": bce_loss_val, "test": bce_loss_test}, e)
 
-        if "Flying" in args.root:
-            if e % mile_stone == 0:
+        if "Flying" in args.root and e >2:
+           if e % mile_stone == 0:
                 optim.param_groups[0]['lr'] *= 0.5
     tb.close()

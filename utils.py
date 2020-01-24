@@ -226,7 +226,11 @@ def disp_function(pred_flo, true_flo):
         image1, image2 = np.expand_dims(pred_flo, axis=0), np.expand_dims(true_flo, axis=0)
         return np.concatenate((image1, image2), axis=0)
     else:
-        return pred_flo
+        true_flo = true_flo[:3]
+        true_flo = true_flo.transpose(0, 2)
+        true_flo = true_flo.transpose(0, 1)
+        image1, image2 = np.expand_dims(pred_flo, axis=0), np.expand_dims(true_flo.cpu().numpy(), axis=0)
+        return np.concatenate((image1, image2), axis=0)
 
 
 def EPE(flow_pred, flow_true, real=False):

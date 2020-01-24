@@ -126,7 +126,6 @@ class Unsupervised(nn.Module):
         flow = F.interpolate(flow, size=(H, W), mode='bilinear', align_corners=True)
         flow = torch.transpose(flow, 1, 2)
         flow = torch.transpose(flow, 2, 3)
-
         grid = flow + grid
         xmax, xmin = torch.max(grid[:, :, :, 0]), torch.min(grid[:, :, :, 0])
         ymax, ymin = torch.max(grid[:, :, :, 1]), torch.min(grid[:, :, :, 1])
@@ -146,7 +145,7 @@ class Unsupervised(nn.Module):
         grid = torch.cat((xx, yy), 1).float()
         grid = torch.transpose(grid, 1, 2)
         grid = torch.transpose(grid, 2, 3)
-        grid.to(x.device)
+        grid = grid.to(x.device)
         flow_predictions = self.predictor(x)
         frame2 = x[:, 3:, :, :]
         warped_images = [self.stn(flow, frame2, grid) for flow in flow_predictions]

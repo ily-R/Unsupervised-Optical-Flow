@@ -283,6 +283,7 @@ def smoothness_loss(flow):
     h_translated = torch.cat((flow[:, :, :, 1:], torch.zeros(b, c, h, 1, device=flow.device)), dim=-1)
     s_loss = charbonnier(flow - v_translated) + charbonnier(flow - h_translated)
     s_loss = torch.sum(s_loss, dim=1) / 2
+
     return torch.sum(s_loss)/b
 
 

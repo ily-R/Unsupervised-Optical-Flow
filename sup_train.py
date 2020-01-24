@@ -185,6 +185,7 @@ if __name__ == '__main__':
         avg_epe_val, avg_aae_val, loss_val = epoch(mymodel, val, loss_fnc)
 
         if loss_val < best_loss:
+            print("---------saving new weights!----------")
             best_loss = loss_val
             torch.save({
                 'model_state_dict': mymodel.state_dict(),

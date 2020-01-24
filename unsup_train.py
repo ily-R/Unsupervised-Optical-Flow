@@ -177,6 +177,7 @@ if __name__ == '__main__':
         smooth_loss_val, bce_loss_val, total_loss_val = epoch(mymodel, val, loss_fnc)
 
         if total_loss_val < best_loss:
+            print("---------saving new weights!----------") 
             best_loss = total_loss_val
             torch.save({
                 'model_state_dict': mymodel.state_dict(),

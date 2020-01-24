@@ -283,11 +283,11 @@ def smoothness_loss(flow):
     v_translated = torch.cat((flow[:, :, 1:, :], torch.zeros(b, c, 1, w, device=flow.device)), dim=-2)
     h_translated = torch.cat((flow[:, :, :, 1:], torch.zeros(b, c, h, 1, device=flow.device)), dim=-1)
     s_loss = charbonnier(flow - v_translated) + charbonnier(flow - v_translated)
-    return torch.sum(s_loss, dim=1).mean()
+    return torch.sum(s_loss)/b
 
 
 def photometric_loss(wraped, frame1):
-    return torch.sum(charbonnier(wraped - frame1), dim=1).mean()
+    return torch.sum(charbonnier(wraped - frame1))/frame1.size(0)
 
 
 def unsup_loss(pred_flows, wraped_imgs, frame1, weights=(0.005, 0.01, 0.02, 0.08, 0.32)):

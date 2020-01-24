@@ -4,6 +4,7 @@ from dataset import *
 from models import Unsupervised
 from torch.utils.tensorboard import SummaryWriter
 import warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 np.random.seed(seed=1)
@@ -50,7 +51,7 @@ def epoch(model, data, criterion, optimizer=None):
         imgs = imgs.to(device)
         with torch.set_grad_enabled(optimizer is not None):
             pred_flows, wraped_imgs = model(imgs)
-            loss, bce_loss, smooth_loss = unsup_loss(pred_flows, wraped_imgs, imgs[:, :3, :, :])
+            loss, bce_loss, smooth_loss = criterion(pred_flows, wraped_imgs, imgs[:, :3, :, :])
 
         if optimizer is not None:
             optimizer.zero_grad()
@@ -70,15 +71,15 @@ def epoch(model, data, criterion, optimizer=None):
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                   'smooth_loss {smooth.val:5.4f} ({smooth.avg:5.4f})\t'
                   'bce_loss {bce.val:5.4f} ({bce.avg:5.4f})'.format(
-                   "EVAL" if optimizer is None else "TRAIN", i, len(data), batch_time=avg_batch_time, loss=avg_loss,
-                   smooth=avg_smooth_loss, bce=avg_bce_loss))
+                "EVAL" if optimizer is None else "TRAIN", i, len(data), batch_time=avg_batch_time, loss=avg_loss,
+                smooth=avg_smooth_loss, bce=avg_bce_loss))
 
     print('\n===============> Total time {batch_time:d}s\t'
           'Avg loss {loss.avg:.4f}\t'
           'Avg smooth_loss {smooth.avg:5.4f} \t'
           'Avg bce_loss {bce.avg:5.4f} \n'.format(
-           batch_time=int(avg_batch_time.sum), loss=avg_loss,
-           smooth=avg_smooth_loss, bce=avg_bce_loss))
+        batch_time=int(avg_batch_time.sum), loss=avg_loss,
+        smooth=avg_smooth_loss, bce=avg_bce_loss))
 
     return avg_smooth_loss.avg, avg_bce_loss.avg, avg_loss.avg
 
@@ -86,7 +87,8 @@ def epoch(model, data, criterion, optimizer=None):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default= '../FlyingChairs_release/data', type=str, metavar='DIR', help='path to dataset')
+    parser.add_argument('--root', default='../FlyingChairs_release/data', type=str, metavar='DIR',
+                        help='path to dataset')
     parser.add_argument('--model', default='flownet', type=str, help='the supervised model to be trained with ('
                                                                      'flownet, lightflownet, pwc_net)')
     parser.add_argument('--steps', default=600000, type=int, metavar='N', help='number of total steps to run')
@@ -119,9 +121,9 @@ if __name__ == '__main__':
 
     if args.augment:
         if "Chairs" in args.root:
-            crop = albu.RandomSizedCrop((150, 384), 384, 512, w2h_ratio=512/384, p=0.5)
+            crop = albu.RandomSizedCrop((150, 384), 384, 512, w2h_ratio=512 / 384, p=0.5)
         elif "sintel" in args.root:
-            crop = albu.RandomSizedCrop((200, 436), 436, 1024, w2h_ratio=1024/436, p=0.5)
+            crop = albu.RandomSizedCrop((200, 436), 436, 1024, w2h_ratio=1024 / 436, p=0.5)
         else:
             crop = albu.RandomSizedCrop((200, 400), 250, 250, w2h_ratio=1, p=0.5)
         co_aug_transforms = albu.Compose([
@@ -200,7 +202,7 @@ if __name__ == '__main__':
         tb.add_scalars('smooth_loss', {"train": smooth_loss, "val": smooth_loss_val, "test": smooth_loss_test}, e)
         tb.add_scalars('bce_loss', {"train": bce_loss, "val": bce_loss_val, "test": bce_loss_test}, e)
 
-        if "Flying" in args.root and e >2:
-           if e % mile_stone == 0:
+        if "Flying" in args.root and e > 2:
+            if e % mile_stone == 0:
                 optim.param_groups[0]['lr'] *= 0.5
     tb.close()

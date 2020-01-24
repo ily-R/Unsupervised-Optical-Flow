@@ -110,6 +110,18 @@ class PWC_Net(nn.Module):
         pass
 
 
+def generate_grid(B, H, W, device):
+    xx = torch.arange(0, W).view(1, -1).repeat(H, 1)
+    yy = torch.arange(0, H).view(-1, 1).repeat(1, W)
+    xx = xx.view(1, 1, H, W).repeat(B, 1, 1, 1)
+    yy = yy.view(1, 1, H, W).repeat(B, 1, 1, 1)
+    grid = torch.cat((xx, yy), 1).float()
+    grid = torch.transpose(grid, 1, 2)
+    grid = torch.transpose(grid, 2, 3)
+    grid = grid.to(device)
+    return grid
+
+
 class Unsupervised(nn.Module):
     def __init__(self, conv_predictor="flownet"):
         super(Unsupervised, self).__init__()
@@ -121,33 +133,24 @@ class Unsupervised(nn.Module):
         else:
             self.predictor = FlowNetS()
 
-    def stn(self, flow, frame, grid):
-        H, W = frame.shape[2:]
-        flow = F.interpolate(flow, size=(H, W), mode='bilinear', align_corners=True)
+    def stn(self, flow, frame):
+        b, _, h, w = flow.shape
+        frame = F.interpolate(frame, size=(h, w), mode='bilinear', align_corners=True)
         flow = torch.transpose(flow, 1, 2)
         flow = torch.transpose(flow, 2, 3)
-        grid = flow + grid
-        xmax, xmin = torch.max(grid[:, :, :, 0]), torch.min(grid[:, :, :, 0])
-        ymax, ymin = torch.max(grid[:, :, :, 1]), torch.min(grid[:, :, :, 1])
-        factor = torch.FloatTensor([[[[2 / (xmax - xmin), 2 / (ymax - ymin)]]]]).to(frame.device)
-        shift = torch.FloatTensor([[[[xmin, ymin]]]]).to(frame.device)
-        grid = (grid - shift) * factor - 1
+
+        grid = flow + generate_grid(b, h, w, flow.device)
+
+        factor = torch.FloatTensor([[[[2 / w, 2 / h]]]]).to(flow.device)
+        grid = grid * factor - 1
         warped_frame = F.grid_sample(frame, grid)
+
         return warped_frame
 
     def forward(self, x):
-        B, C, H, W = x.size()
-        # mesh grid
-        xx = torch.arange(0, W).view(1, -1).repeat(H, 1)
-        yy = torch.arange(0, H).view(-1, 1).repeat(1, W)
-        xx = xx.view(1, 1, H, W).repeat(B, 1, 1, 1)
-        yy = yy.view(1, 1, H, W).repeat(B, 1, 1, 1)
-        grid = torch.cat((xx, yy), 1).float()
-        grid = torch.transpose(grid, 1, 2)
-        grid = torch.transpose(grid, 2, 3)
-        grid = grid.to(x.device)
+
         flow_predictions = self.predictor(x)
         frame2 = x[:, 3:, :, :]
-        warped_images = [self.stn(flow, frame2, grid) for flow in flow_predictions]
+        warped_images = [self.stn(flow, frame2) for flow in flow_predictions]
 
         return flow_predictions, warped_images
